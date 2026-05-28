@@ -1009,13 +1009,9 @@
         }
 
         function updateNavBadges() {
-            const classStudents = _currentClassId
-                ? _students.filter(s => s.class_id === _currentClassId)
-                : _students;
-            const classStudentIds = new Set(classStudents.map(s => s.id));
-            const classSubs = _submissions.filter(s => classStudentIds.has(s.user_id));
-            document.getElementById('navBadgeStudents').textContent = classStudents.length;
-            document.getElementById('navBadgeProjects').textContent = classSubs.length;
+            const allStudentIds = new Set(_students.map(s => s.id));
+            document.getElementById('navBadgeStudents').textContent = _students.length;
+            document.getElementById('navBadgeProjects').textContent = _submissions.filter(s => allStudentIds.has(s.user_id)).length;
         }
 
         function switchClass(classId) {
