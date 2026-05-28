@@ -243,6 +243,10 @@
             const idx = _classes.findIndex(c => c.id === classId);
             return CLASS_PALETTE[idx >= 0 ? idx % CLASS_PALETTE.length : 0];
         }
+        function fullName(s) {
+            if (!s) return '—';
+            return [s.first_name, s.last_name].filter(Boolean).join(' ') || '—';
+        }
 
         // ── Theme ─────────────────────────────────────────────────────────────────
         function applyDashTheme(dark) {
@@ -267,7 +271,9 @@
             if (role !== 'teacher') { window.location.href = 'index.html'; return; }
 
             _teacherId = user.id;
-            const name = user.user_metadata?.name || user.email;
+            const fn = user.user_metadata?.first_name || '';
+            const ln = user.user_metadata?.last_name || '';
+            const name = [fn, ln].filter(Boolean).join(' ') || user.email;
             document.getElementById('sidebarName').textContent = name;
             document.getElementById('sidebarAvatar').textContent = name[0].toUpperCase();
 
@@ -348,8 +354,9 @@
             }
             el.innerHTML = recent.map(sub => {
                 const student = _profileMap[sub.user_id];
-                const color = avatarColor(student?.name || '?');
-                const initial = (student?.name || '?')[0].toUpperCase();
+                const sName = fullName(student);
+                const color = avatarColor(sName);
+                const initial = sName[0].toUpperCase();
                 const date = fmtDate(sub.updated_at || sub.created_at);
                 const cls = _classes.find(c => c.id === student?.class_id);
                 const col = cls ? classColor(cls.id) : 'var(--muted)';
@@ -363,7 +370,7 @@
                 </div>
                 <div class="recent-student">
                     <div class="all-mini-avatar" style="background:${color}">${initial}</div>
-                    ${esc(student?.name || '—')}
+                    ${esc(sName)}
                 </div>
                 <div>${clsBadge}</div>
                 <div class="recent-date">${date}</div>
@@ -383,15 +390,16 @@
             el.innerHTML = list.map(s => {
                 const subs = _submissions.filter(p => p.user_id === s.id);
                 const last = subs[0];
-                const color = avatarColor(s.name);
-                const initial = (s.name || '?')[0].toUpperCase();
+                const sName = fullName(s);
+                const color = avatarColor(sName);
+                const initial = sName[0].toUpperCase();
                 const cls = _classes.find(c => c.id === s.class_id);
                 const clsLabel = cls ? `🎓 Schüler/in aus ${esc(cls.name)}` : '🎓 Schüler/in';
                 return `<div class="student-card" onclick="openStudentDetail('${s.id}')">
                 <div class="student-card-top">
                     <div class="student-avatar" style="background:${color}">${initial}</div>
                     <div style="flex:1;min-width:0">
-                        <div class="student-name">${esc(s.name)}</div>
+                        <div class="student-name">${esc(sName)}</div>
                         <div class="student-email">${clsLabel}</div>
                     </div>
                 </div>
@@ -405,7 +413,7 @@
 
         function filterStudents() {
             const q = document.getElementById('studentSearch').value.toLowerCase();
-            renderStudentsGrid(_students.filter(s => s.name.toLowerCase().includes(q)));
+            renderStudentsGrid(_students.filter(s => fullName(s).toLowerCase().includes(q)));
         }
 
         // ── Student Detail ────────────────────────────────────────────────────────
@@ -414,15 +422,16 @@
             if (!student) return;
 
             const subs = _submissions.filter(s => s.user_id === studentId);
-            const color = avatarColor(student.name);
-            const initial = (student.name || '?')[0].toUpperCase();
+            const sName = fullName(student);
+            const color = avatarColor(sName);
+            const initial = sName[0].toUpperCase();
             const cls = _classes.find(c => c.id === student.class_id);
             const clsLabel = cls ? `🎓 Schüler/in aus ${esc(cls.name)}` : '🎓 Schüler/in';
 
             document.getElementById('detailHeader').innerHTML = `
             <div class="detail-avatar" style="background:${color}">${initial}</div>
             <div>
-                <div class="detail-name">${esc(student.name)}</div>
+                <div class="detail-name">${esc(sName)}</div>
                 <div class="detail-email">${clsLabel}</div>
                 <div class="detail-stats">
                     <div class="detail-stat"><strong>${subs.length}</strong> Projekte</div>
@@ -457,7 +466,7 @@
             }
 
             switchView('student-detail', null);
-            document.getElementById('topbarTitle').textContent = student.name;
+            document.getElementById('topbarTitle').textContent = sName;
             document.getElementById('topbarSub').textContent = `${subs.length} Projekte`;
         }
 
@@ -489,7 +498,7 @@
             }
             if (_projectFilterStudent) {
                 const s = _profileMap[_projectFilterStudent];
-                if (s) html += `<button class="filter-chip active" onclick="setProjectFilter(null,null)">👤 ${esc(s.name)} ✕</button>`;
+                if (s) html += `<button class="filter-chip active" onclick="setProjectFilter(null,null)">👤 ${esc(fullName(s))} ✕</button>`;
             }
             el.innerHTML = html;
         }
@@ -514,7 +523,7 @@
             if (q) {
                 list = list.filter(sub => {
                     const st = _profileMap[sub.user_id];
-                    return (sub.title || '').toLowerCase().includes(q) || (st?.name || '').toLowerCase().includes(q);
+                    return (sub.title || '').toLowerCase().includes(q) || fullName(st).toLowerCase().includes(q);
                 });
             }
             renderAllProjects(list);
@@ -538,8 +547,9 @@
 
             el.innerHTML = [...groups.entries()].map(([uid, subs]) => {
                 const student = _profileMap[uid];
-                const color = avatarColor(student?.name || '?');
-                const initial = (student?.name || '?')[0].toUpperCase();
+                const sName = fullName(student);
+                const color = avatarColor(sName);
+                const initial = sName[0].toUpperCase();
                 const cls = _classes.find(c => c.id === student?.class_id);
                 const col = cls ? classColor(cls.id) : 'var(--muted)';
                 const clsBadge = cls
@@ -571,7 +581,7 @@
                 return `<div class="student-group">
                     <div class="student-group-header" onclick="toggleStudentGroup(this)">
                         <div class="all-mini-avatar" style="background:${color};width:34px;height:34px;font-size:0.85rem">${initial}</div>
-                        <span class="student-group-name">${esc(student?.name || '—')}</span>
+                        <span class="student-group-name">${esc(sName)}</span>
                         ${clsBadge}
                         <span class="student-group-count">${subs.length} Projekt${subs.length !== 1 ? 'e' : ''}</span>
                         <span class="project-chevron open" style="margin-left:auto">▼</span>
@@ -705,10 +715,8 @@
         // ── Dashboard Profile Modal ───────────────────────────────────────────────
         async function openDashProfileModal() {
             const { data: { user } } = await _sb.auth.getUser();
-            const name = user?.user_metadata?.name || '';
-            const parts = name.trim().split(' ');
-            document.getElementById('dashProfileFirstName').value = parts[0] || '';
-            document.getElementById('dashProfileLastName').value = parts.slice(1).join(' ') || '';
+            document.getElementById('dashProfileFirstName').value = user?.user_metadata?.first_name || '';
+            document.getElementById('dashProfileLastName').value = user?.user_metadata?.last_name || '';
             document.getElementById('dashProfileEmail').value = user?.email || '';
             document.getElementById('dashProfilePassword').value = '';
             document.getElementById('dashProfilePasswordConfirm').value = '';
@@ -744,7 +752,7 @@
             const fullName = lastName ? `${firstName} ${lastName}` : firstName;
             const { data: { user } } = await _sb.auth.getUser();
 
-            const authUpdates = { data: { name: fullName } };
+            const authUpdates = { data: { first_name: firstName, last_name: lastName } };
             if (email && email !== user.email) authUpdates.email = email;
             if (pw) authUpdates.password = pw;
 
@@ -756,10 +764,11 @@
                 return;
             }
 
-            await _sb.from('profiles').update({ name: fullName }).eq('id', user.id);
+            await _sb.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', user.id);
 
-            document.getElementById('sidebarName').textContent = fullName;
-            document.getElementById('sidebarAvatar').textContent = fullName[0].toUpperCase();
+            const displayName = [firstName, lastName].filter(Boolean).join(' ');
+            document.getElementById('sidebarName').textContent = displayName;
+            document.getElementById('sidebarAvatar').textContent = displayName[0].toUpperCase();
 
             btn.disabled = false; btn.textContent = 'Speichern';
             successEl.textContent = email !== user.email

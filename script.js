@@ -1031,8 +1031,10 @@ sys.modules['turtle'] = _turtle_mod
                 document.getElementById('activeProjectLabel').style.display = 'none';
             }
             if (loggedIn) {
-                const name = currentUser.user_metadata?.name || currentUser.email;
-                document.getElementById('userEmail').textContent = name;
+                const fn = currentUser.user_metadata?.first_name || '';
+                const ln = currentUser.user_metadata?.last_name || '';
+                const displayName = [fn, ln].filter(Boolean).join(' ') || currentUser.email;
+                document.getElementById('userEmail').textContent = displayName;
             }
         }
 
@@ -1052,7 +1054,8 @@ sys.modules['turtle'] = _turtle_mod
             switchAuthMode(_authMode);
             document.getElementById('authEmail').value = '';
             document.getElementById('authPassword').value = '';
-            document.getElementById('authName').value = '';
+            document.getElementById('authFirstName').value = '';
+            document.getElementById('authLastName').value = '';
             document.getElementById('authSchoolKey').value = '';
             document.getElementById('authTeacherKey').value = '';
             document.getElementById('roleSchüler').checked = true;
@@ -1112,12 +1115,13 @@ sys.modules['turtle'] = _turtle_mod
                     if (error) throw error;
                     closeModal('authModal');
                 } else {
-                    const name = document.getElementById('authName').value.trim();
-                    const isTeacher = document.getElementById('roleLehrer').checked;
-                    const schoolKey = document.getElementById('authSchoolKey').value.trim();
+                    const firstName  = document.getElementById('authFirstName').value.trim();
+                    const lastName   = document.getElementById('authLastName').value.trim();
+                    const isTeacher  = document.getElementById('roleLehrer').checked;
+                    const schoolKey  = document.getElementById('authSchoolKey').value.trim();
                     const teacherKey = document.getElementById('authTeacherKey').value.trim();
 
-                    if (!name) { showAuthError('Bitte Namen eingeben.'); throw null; }
+                    if (!firstName) { showAuthError('Bitte Vorname eingeben.'); throw null; }
 
                     // Key-Validierung
                     if (isTeacher) {
@@ -1133,7 +1137,7 @@ sys.modules['turtle'] = _turtle_mod
                     const role = isTeacher ? 'teacher' : 'student';
                     const { data, error } = await _sb.auth.signUp({
                         email, password,
-                        options: { data: { name, role } }
+                        options: { data: { first_name: firstName, last_name: lastName, role } }
                     });
                     if (error) throw error;
 
@@ -1141,7 +1145,8 @@ sys.modules['turtle'] = _turtle_mod
                     if (data?.user) {
                         await _sb.from('profiles').insert({
                             id: data.user.id,
-                            name,
+                            first_name: firstName,
+                            last_name: lastName,
                             role
                         });
                     }
@@ -1165,10 +1170,8 @@ sys.modules['turtle'] = _turtle_mod
 
         // ── Profil bearbeiten ─────────────────────────────────────────────────
         function openProfileModal() {
-            const name = currentUser?.user_metadata?.name || '';
-            const parts = name.trim().split(' ');
-            document.getElementById('profileFirstName').value = parts[0] || '';
-            document.getElementById('profileLastName').value = parts.slice(1).join(' ') || '';
+            document.getElementById('profileFirstName').value = currentUser?.user_metadata?.first_name || '';
+            document.getElementById('profileLastName').value = currentUser?.user_metadata?.last_name || '';
             document.getElementById('profileEmail').value = currentUser?.email || '';
             document.getElementById('profilePassword').value = '';
             document.getElementById('profilePasswordConfirm').value = '';
@@ -1197,8 +1200,7 @@ sys.modules['turtle'] = _turtle_mod
 
             btn.disabled = true; btn.textContent = '…';
 
-            const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-            const authUpdates = { data: { name: fullName } };
+            const authUpdates = { data: { first_name: firstName, last_name: lastName } };
             if (email && email !== currentUser.email) authUpdates.email = email;
             if (pw) authUpdates.password = pw;
 
@@ -1210,18 +1212,17 @@ sys.modules['turtle'] = _turtle_mod
                 return;
             }
 
-            await _sb.from('profiles').update({ name: fullName }).eq('id', currentUser.id);
+            await _sb.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', currentUser.id);
 
             const { data: { user } } = await _sb.auth.getUser();
             currentUser = user;
             updateAuthUI();
 
             btn.disabled = false; btn.textContent = 'Speichern';
-            successEl.textContent = '✓ Profil gespeichert!';
+            successEl.textContent = email && email !== currentUser.email
+                ? '✓ Gespeichert. Bitte bestätige die neue E-Mail in deinem Postfach.'
+                : '✓ Profil gespeichert!';
             successEl.style.display = 'block';
-            if (email && email !== currentUser.email) {
-                successEl.textContent = '✓ Gespeichert. Bitte bestätige die neue E-Mail in deinem Postfach.';
-            }
         }
 
         function openDeleteAccountModal() {
