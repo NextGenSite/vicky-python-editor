@@ -873,9 +873,11 @@
             const inProgressCount = (subs || []).filter(s => s.status === 'in_progress').length;
 
             const statusBadge = s => {
-                const status = subsMap[s.id]?.status || 'open';
-                if (status === 'submitted') return '<span style="color:var(--green);font-weight:600">✓ Abgegeben</span>';
-                if (status === 'in_progress') return '<span style="color:var(--yellow);font-weight:600">✏️ In Bearbeitung</span>';
+                const sub = subsMap[s.id];
+                const status = sub?.status || 'open';
+                const time = sub?.updated_at ? `<span style="font-size:0.72rem;color:var(--muted);margin-left:6px">${fmtDate(sub.updated_at)}</span>` : '';
+                if (status === 'submitted') return `<span style="color:var(--green);font-weight:600">✓ Abgegeben</span>${time}`;
+                if (status === 'in_progress') return `<span style="color:var(--yellow);font-weight:600">✏️ In Bearbeitung</span>${time}`;
                 return '<span style="color:var(--muted)">○ Offen</span>';
             };
 

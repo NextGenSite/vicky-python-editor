@@ -1024,7 +1024,7 @@ sys.modules['turtle'] = _turtle_mod
                 if (status === 'submitted') badge = '<span style="color:#a6e3a1;font-size:0.78rem">✓ Abgegeben</span>';
                 const due = task.due_date ? `<span style="font-size:0.75rem;color:#6c7086"> · bis ${new Date(task.due_date).toLocaleDateString('de-DE')}</span>` : '';
                 return `<div onclick="showTaskDetail('${task.id}')" style="background:#1e1e2e;border:1px solid #313244;border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='#89b4fa'" onmouseout="this.style.borderColor='#313244'">
-                    <div style="font-weight:700;margin-bottom:4px">${escapeHtml(task.title)}</div>
+                    <div style="font-weight:700;margin-bottom:4px;color:#cdd6f4">${escapeHtml(task.title)}</div>
                     <div style="display:flex;align-items:center;gap:10px">${badge}${due}</div>
                 </div>`;
             }).join('');
@@ -1101,6 +1101,7 @@ sys.modules['turtle'] = _turtle_mod
             if (!tab?.taskId) return;
             if (!confirm('Aufgabe jetzt abgeben? Du kannst danach noch weiter speichern.')) return;
             const btn = document.getElementById('submitTaskBtn');
+            const origText = btn.textContent;
             btn.disabled = true; btn.textContent = '…';
             try {
                 await _sb.from('task_submissions').upsert({
@@ -1163,6 +1164,7 @@ sys.modules['turtle'] = _turtle_mod
             document.getElementById('userMenu').style.display = loggedIn ? 'flex' : 'none';
             document.getElementById('cloudSaveBtn').style.display = loggedIn ? 'inline-flex' : 'none';
             document.getElementById('myProjectsBtn').style.display = loggedIn ? 'inline-flex' : 'none';
+            if (loggedIn) setTimeout(updateTaskModeUI, 0);
             document.getElementById('dashboardBtn').style.display = (loggedIn && isTeacher) ? 'inline-flex' : 'none';
             document.getElementById('qrBtn').style.display = (loggedIn && isTeacher) ? 'inline-flex' : 'none';
             const isStudent = loggedIn && !isTeacher;
@@ -1517,6 +1519,8 @@ sys.modules['turtle'] = _turtle_mod
         // ── Projekt speichern ─────────────────────────────────────────────────
 
         function openSaveTitleModal() {
+            const tab = getActiveTab();
+            if (tab?.taskId) { saveTaskProgress(); return; }
             document.getElementById('saveTitleInput').value = '';
             document.getElementById('saveError').classList.remove('show');
             openModal('saveTitleModal');
