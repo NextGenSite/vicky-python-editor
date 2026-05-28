@@ -357,20 +357,16 @@
 
         async function loadAll() {
             try {
-                let studentsQuery = _sb.from('profiles').select('*').eq('role', 'student').order('first_name');
-                if (_currentClassId) studentsQuery = studentsQuery.eq('class_id', _currentClassId);
-
-                const [{ data: students, error: e1 }, { data: subs, error: e2 }, { data: allCounts }] = await Promise.all([
-                    studentsQuery,
+                const [{ data: students, error: e1 }, { data: subs, error: e2 }] = await Promise.all([
+                    _sb.from('profiles').select('*').eq('role', 'student').order('first_name'),
                     _sb.from('submissions').select('*').order('updated_at', { ascending: false }),
-                    _sb.from('profiles').select('class_id').eq('role', 'student')
                 ]);
                 if (e1) console.error('profiles error:', e1);
                 if (e2) console.error('submissions error:', e2);
 
                 _classCounts = {};
-                for (const r of (allCounts || [])) {
-                    if (r.class_id) _classCounts[r.class_id] = (_classCounts[r.class_id] || 0) + 1;
+                for (const s of (students || [])) {
+                    if (s.class_id) _classCounts[s.class_id] = (_classCounts[s.class_id] || 0) + 1;
                 }
 
                 _students = students || [];
@@ -399,22 +395,34 @@
             const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
             const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
 
-            const todayActive = new Set(_submissions
+            const classStudents = _currentClassId
+                ? _students.filter(s => s.class_id === _currentClassId)
+                : _students;
+            const classStudentIds = new Set(classStudents.map(s => s.id));
+            const classSubs = _submissions.filter(s => classStudentIds.has(s.user_id));
+
+            const todayActive = new Set(classSubs
                 .filter(s => new Date(s.updated_at || s.created_at) >= todayStart)
                 .map(s => s.user_id)).size;
 
-            const weekCount = _submissions.filter(s =>
+            const weekCount = classSubs.filter(s =>
                 new Date(s.updated_at || s.created_at) >= weekStart).length;
 
-            document.getElementById('statS').textContent = _students.length;
-            document.getElementById('statP').textContent = _submissions.length;
+            document.getElementById('statS').textContent = classStudents.length;
+            document.getElementById('statP').textContent = classSubs.length;
             document.getElementById('statT').textContent = todayActive;
             document.getElementById('statR').textContent = weekCount;
         }
 
         // ── Recent ────────────────────────────────────────────────────────────────
         function renderRecent() {
-            const recent = _submissions.slice(0, 15);
+            const classStudentIds = _currentClassId
+                ? new Set(_students.filter(s => s.class_id === _currentClassId).map(s => s.id))
+                : null;
+            const filtered = classStudentIds
+                ? _submissions.filter(s => classStudentIds.has(s.user_id))
+                : _submissions;
+            const recent = filtered.slice(0, 15);
             const el = document.getElementById('recentList');
             if (!recent.length) {
                 el.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.85rem;text-align:center">Noch keine Aktivität</div>';
