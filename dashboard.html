@@ -688,26 +688,81 @@
                 return;
             }
             el.innerHTML = createBtn + _classes.map(cls => {
-                const isActive = cls.id === _currentClassId;
                 const stuCount = _classCounts[cls.id] ?? 0;
-                return `<div class="class-row">
-                <div class="class-icon" style="font-size:1.5rem">🏫</div>
-                <div style="flex:1;min-width:0">
-                    <div class="class-row-name">${esc(cls.name)}</div>
-                    <div class="class-row-sub">${stuCount} Schüler · Erstellt ${fmtDate(cls.created_at)}</div>
-                </div>
-                <div class="join-code-box" style="gap:14px">
-                    <div>
-                        <div class="join-code-label">Beitrittscode</div>
-                        <div class="class-row-code">${esc(cls.join_code)}</div>
+                return `<div class="class-card-wrapper" id="wrapper-${cls.id}">
+                <div class="class-row">
+                    <div class="class-icon" style="font-size:1.5rem">🏫</div>
+                    <div style="flex:1;min-width:0">
+                        <div class="class-row-name">${esc(cls.name)}</div>
+                        <div class="class-row-sub" id="subCount-${cls.id}">${stuCount} Schüler · Erstellt ${fmtDate(cls.created_at)}</div>
                     </div>
+                    <div class="join-code-box" style="gap:14px">
+                        <div>
+                            <div class="join-code-label">Beitrittscode</div>
+                            <div class="class-row-code">${esc(cls.join_code)}</div>
+                        </div>
+                    </div>
+                    <button class="topbar-btn" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(cls.join_code)}').then(()=>{this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Kopieren',1500)})">📋 Kopieren</button>
+                    <button class="topbar-btn" onclick="toggleClassStudents('${cls.id}')">👥 Schüler</button>
+                    <button class="topbar-btn" style="color:var(--red);border-color:var(--red)" onclick="deleteClass('${cls.id}')">🗑 Löschen</button>
                 </div>
-                <button class="topbar-btn" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(cls.join_code)}').then(()=>{this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Kopieren',1500)})">📋 Kopieren</button>
+                <div class="class-students-list" id="stuList-${cls.id}"></div>
             </div>`;
             }).join('');
         }
 
         // ── Class Selector (topbar) ───────────────────────────────────────────────
+        async function toggleClassStudents(classId) {
+            const wrapper = document.getElementById('wrapper-' + classId);
+            const listEl = document.getElementById('stuList-' + classId);
+            const isOpen = wrapper.classList.contains('open');
+            if (isOpen) {
+                wrapper.classList.remove('open');
+                listEl.style.display = 'none';
+                return;
+            }
+            wrapper.classList.add('open');
+            listEl.style.display = 'block';
+            listEl.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:0.85rem">Lädt…</div>';
+            const { data } = await _sb.from('profiles').select('*').eq('class_id', classId).eq('role', 'student').order('first_name');
+            if (!data || !data.length) {
+                listEl.innerHTML = '<div style="padding:12px 4px;color:var(--muted);font-size:0.85rem">Keine Schüler in dieser Klasse.</div>';
+                return;
+            }
+            listEl.innerHTML = data.map(s => `
+                <div class="class-student-item" id="stuItem-${s.id}">
+                    <span>${esc(fullName(s))}</span>
+                    <button class="btn-remove" onclick="removeStudentFromClass('${s.id}','${classId}')">✕ Entfernen</button>
+                </div>`).join('');
+        }
+
+        async function removeStudentFromClass(studentId, classId) {
+            const { error } = await _sb.from('profiles').update({ class_id: null }).eq('id', studentId);
+            if (error) { console.error(error); return; }
+            document.getElementById('stuItem-' + studentId)?.remove();
+            if (_classCounts[classId]) _classCounts[classId]--;
+            const sub = document.getElementById('subCount-' + classId);
+            if (sub) {
+                const cls = _classes.find(c => c.id === classId);
+                sub.textContent = `${_classCounts[classId] ?? 0} Schüler · Erstellt ${cls ? fmtDate(cls.created_at) : ''}`;
+            }
+            if (_students.some(s => s.id === studentId)) {
+                _students = _students.filter(s => s.id !== studentId);
+                delete _profileMap[studentId];
+                renderStats();
+            }
+        }
+
+        async function deleteClass(classId) {
+            const cls = _classes.find(c => c.id === classId);
+            if (!confirm(`Klasse "${cls?.name}" wirklich löschen? Alle Schüler werden ohne Klasse sein.`)) return;
+            await _sb.from('profiles').update({ class_id: null }).eq('class_id', classId);
+            await _sb.from('classes').delete().eq('id', classId);
+            if (_currentClassId === classId) _currentClassId = null;
+            await loadClasses();
+            await loadAll();
+        }
+
         function renderClassSelector() {
             const sel = document.getElementById('classSelector');
             if (_classes.length <= 1) { sel.style.display = 'none'; return; }
