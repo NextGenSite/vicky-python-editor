@@ -1062,17 +1062,27 @@ sys.modules['turtle'] = _turtle_mod
 
             const code = existing?.code || task.starter_code || '';
             createTab(`📝 ${task.title}`, code, '', null, null, task.id);
-            appendLine(`\n📝 Aufgabe "${task.title}" geöffnet. Speichern = Fortschritt, Abgeben = fertig.\n`, 'ok');
+            appendLine(`\n📝 Aufgabe "${task.title}" geöffnet.\n`, 'ok');
             updateTaskModeUI();
+            const submitBtn = document.getElementById('submitTaskBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = existing?.status === 'submitted' ? '✓ Abgegeben' : '✅ Abgeben';
+            }
         }
 
         function updateTaskModeUI() {
             const tab = getActiveTab();
             const inTaskMode = !!tab?.taskId;
             const submitBtn = document.getElementById('submitTaskBtn');
+            const taskSaveBtn = document.getElementById('taskSaveBtn');
             const saveBtn = document.getElementById('cloudSaveBtn');
             const updateBtn = document.getElementById('updateProjectBtn');
-            if (submitBtn) submitBtn.style.display = inTaskMode ? 'inline-flex' : 'none';
+            if (submitBtn) {
+                submitBtn.style.display = inTaskMode ? 'inline-flex' : 'none';
+                if (!inTaskMode) { submitBtn.disabled = false; submitBtn.textContent = '✅ Abgeben'; }
+            }
+            if (taskSaveBtn) taskSaveBtn.style.display = inTaskMode ? 'inline-flex' : 'none';
             if (saveBtn) saveBtn.style.display = inTaskMode ? 'none' : (currentUser ? 'inline-flex' : 'none');
             if (updateBtn && !inTaskMode) {
                 updateBtn.style.display = (currentUser && tab?.projectId) ? 'inline-flex' : 'none';
@@ -1109,6 +1119,7 @@ sys.modules['turtle'] = _turtle_mod
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'task_id,user_id' });
                 appendLine('\n✅ Aufgabe abgegeben!\n', 'ok');
+                btn.disabled = false;
                 btn.textContent = '✓ Abgegeben';
             } catch(err) {
                 appendLine(`\n✗ Fehler: ${err.message}\n`, 'err');
