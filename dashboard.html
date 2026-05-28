@@ -839,11 +839,12 @@
             const el = document.getElementById('tasksViewContent');
             if (!el) return;
             const createBtn = `<button class="topbar-btn primary" onclick="openCreateTaskModal()" style="margin-bottom:20px">+ Neue Aufgabe erstellen</button>`;
-            if (!_tasks.length) {
+            const filtered = _currentClassId ? _tasks.filter(t => t.class_id === _currentClassId) : _tasks;
+            if (!filtered.length) {
                 el.innerHTML = createBtn + `<div class="no-class-card"><div class="nc-icon">📝</div><p>Noch keine Aufgaben erstellt.</p></div>`;
                 return;
             }
-            el.innerHTML = createBtn + _tasks.map(task => {
+            el.innerHTML = createBtn + filtered.map(task => {
                 const cls = _classes.find(c => c.id === task.class_id);
                 const stuCount = _classCounts[task.class_id] ?? 0;
                 const due = task.due_date ? ` · bis ${fmtDate(task.due_date)}` : '';
@@ -989,6 +990,7 @@
         function switchClass(classId) {
             _currentClassId = classId || _classes[0]?.id || null;
             loadAll();
+            renderTasksView();
         }
 
         // ── Dashboard Profile Modal ───────────────────────────────────────────────
