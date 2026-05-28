@@ -970,18 +970,19 @@ sys.modules['turtle'] = _turtle_mod
 
         async function checkStudentClass() {
             if (!currentUser) return;
-            const { data, error } = await _sb.from('profiles').select('class_id, role').eq('id', currentUser.id).single();
+            const { data } = await _sb.from('profiles').select('class_id, role').eq('id', currentUser.id).single();
             const isStudent = data?.role === 'student' || currentUser?.user_metadata?.role === 'student';
             const hasClass = data?.class_id;
             const btn = document.getElementById('joinClassBtn2');
-            if (isStudent && !hasClass) {
-                if (btn) btn.style.display = 'inline-flex';
-                const logo = document.querySelector('header .logo img')?.src;
-                if (logo) document.getElementById('joinClassLogo').src = logo;
-                document.getElementById('joinClassModal').classList.add('open');
-            } else {
-                if (btn) btn.style.display = 'none';
-            }
+            if (btn) btn.style.display = (isStudent && !hasClass) ? 'inline-flex' : 'none';
+        }
+
+        function openJoinClassModal() {
+            const logo = document.querySelector('header .logo img')?.src;
+            if (logo) document.getElementById('joinClassLogo').src = logo;
+            document.getElementById('joinCodeInput').value = '';
+            document.getElementById('joinClassError').style.display = 'none';
+            openModal('joinClassModal');
         }
 
         async function joinClass() {
