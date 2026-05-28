@@ -303,7 +303,7 @@
 
         async function loadAll() {
             try {
-                let studentsQuery = _sb.from('profiles').select('*').eq('role', 'student').order('name');
+                let studentsQuery = _sb.from('profiles').select('*').eq('role', 'student').order('first_name');
                 if (_currentClassId) studentsQuery = studentsQuery.eq('class_id', _currentClassId);
 
                 const [{ data: students, error: e1 }, { data: subs, error: e2 }, { data: allCounts }] = await Promise.all([
