@@ -953,11 +953,28 @@ sys.modules['turtle'] = _turtle_mod
         let _currentTaskId = null;
         let _currentTaskData = null;
 
+        let _realtimeChannel = null;
+
         _sb.auth.onAuthStateChange((_event, session) => {
             currentUser = session?.user ?? null;
             updateAuthUI();
-            if (currentUser) checkStudentClass();
+            if (currentUser) {
+                checkStudentClass();
+                setupProfileRealtime();
+            } else {
+                if (_realtimeChannel) { _sb.removeChannel(_realtimeChannel); _realtimeChannel = null; }
+            }
         });
+
+        function setupProfileRealtime() {
+            if (_realtimeChannel) _sb.removeChannel(_realtimeChannel);
+            _realtimeChannel = _sb.channel('profile-watch')
+                .on('postgres_changes', {
+                    event: 'UPDATE', schema: 'public', table: 'profiles',
+                    filter: `id=eq.${currentUser.id}`
+                }, () => checkStudentClass())
+                .subscribe();
+        }
 
         async function initAuth() {
             const { data } = await _sb.auth.getSession();
