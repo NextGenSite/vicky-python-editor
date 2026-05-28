@@ -1077,14 +1077,12 @@ sys.modules['turtle'] = _turtle_mod
             const tab = getActiveTab();
             const inTaskMode = !!tab?.taskId;
             const submitBtn = document.getElementById('submitTaskBtn');
-            const taskSaveBtn = document.getElementById('taskSaveBtn');
             const saveBtn = document.getElementById('cloudSaveBtn');
             const updateBtn = document.getElementById('updateProjectBtn');
             if (submitBtn) {
                 submitBtn.style.display = inTaskMode ? 'inline-flex' : 'none';
                 if (!inTaskMode) { submitBtn.disabled = false; submitBtn.textContent = '✅ Abgeben'; }
             }
-            if (taskSaveBtn) taskSaveBtn.style.display = 'none';
             if (saveBtn) saveBtn.style.display = currentUser ? 'inline-flex' : 'none';
             if (updateBtn && !inTaskMode) {
                 updateBtn.style.display = (currentUser && tab?.projectId) ? 'inline-flex' : 'none';
@@ -1547,9 +1545,13 @@ sys.modules['turtle'] = _turtle_mod
 
         // ── Projekt speichern ─────────────────────────────────────────────────
 
-        function openSaveTitleModal() {
+        function handleSaveBtn() {
             const tab = getActiveTab();
             if (tab?.taskId) { saveTaskProgress(); return; }
+            openSaveTitleModal();
+        }
+
+        function openSaveTitleModal() {
             document.getElementById('saveTitleInput').value = '';
             document.getElementById('saveError').classList.remove('show');
             openModal('saveTitleModal');
