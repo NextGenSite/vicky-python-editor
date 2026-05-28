@@ -375,8 +375,7 @@
                 _profileMap = {};
                 for (const s of _students) _profileMap[s.id] = s;
 
-                document.getElementById('navBadgeStudents').textContent = _students.length;
-                document.getElementById('navBadgeProjects').textContent = _submissions.length;
+                updateNavBadges();
 
                 renderStats();
                 renderRecent();
@@ -998,10 +997,22 @@
             ).join('');
         }
 
+        function updateNavBadges() {
+            const classStudents = _currentClassId
+                ? _students.filter(s => s.class_id === _currentClassId)
+                : _students;
+            const classStudentIds = new Set(classStudents.map(s => s.id));
+            const classSubs = _submissions.filter(s => classStudentIds.has(s.user_id));
+            document.getElementById('navBadgeStudents').textContent = classStudents.length;
+            document.getElementById('navBadgeProjects').textContent = classSubs.length;
+        }
+
         function switchClass(classId) {
             _currentClassId = classId || _classes[0]?.id || null;
             loadAll();
             renderTasksView();
+            updateNavBadges();
+            renderStudentsGrid();
         }
 
         // ── Dashboard Profile Modal ───────────────────────────────────────────────
