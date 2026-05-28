@@ -1756,15 +1756,16 @@ WEITERE REGELN:
             for (const s of students) {
                 const subs = _dashSubmissions.filter(p => p.user_id === s.id);
                 const lastSub = subs[0];
-                const color = _avatarColor(s.name);
-                const initial = (s.name || '?')[0].toUpperCase();
+                const sFullName = [s.first_name, s.last_name].filter(Boolean).join(' ') || '?';
+                const color = _avatarColor(sFullName);
+                const initial = sFullName[0].toUpperCase();
                 const card = document.createElement('div');
                 card.className = 'dash-student-card';
                 card.innerHTML = `
                     <div class="dash-student-top">
                         <div class="dash-avatar" style="background:${color}">${initial}</div>
                         <div class="dash-student-info">
-                            <div class="dash-student-name">${_escHtml(s.name)}</div>
+                            <div class="dash-student-name">${_escHtml(sFullName)}</div>
                             <div class="dash-student-email">${_escHtml(s.id)}</div>
                         </div>
                     </div>
@@ -1781,8 +1782,9 @@ WEITERE REGELN:
 
         function renderStudentDetail(student) {
             const subs = _dashSubmissions.filter(p => p.user_id === student.id);
-            const color = _avatarColor(student.name);
-            const initial = (student.name || '?')[0].toUpperCase();
+            const sFullName = [student.first_name, student.last_name].filter(Boolean).join(' ') || '?';
+            const color = _avatarColor(sFullName);
+            const initial = sFullName[0].toUpperCase();
             const body = document.getElementById('dashBody');
 
             let html = `
@@ -1790,7 +1792,7 @@ WEITERE REGELN:
                 <div class="dash-detail-header">
                     <div class="dash-detail-avatar" style="background:${color}">${initial}</div>
                     <div>
-                        <div class="dash-detail-name">${_escHtml(student.name)}</div>
+                        <div class="dash-detail-name">${_escHtml(sFullName)}</div>
                         <div class="dash-detail-email">${_escHtml(student.id)}</div>
                     </div>
                 </div>`;
@@ -1834,9 +1836,10 @@ WEITERE REGELN:
 
         function filterDashStudents() {
             const q = document.getElementById('dashSearch').value.toLowerCase();
-            const filtered = _dashStudents.filter(s =>
-                s.name.toLowerCase().includes(q)
-            );
+            const filtered = _dashStudents.filter(s => {
+                const n = [s.first_name, s.last_name].filter(Boolean).join(' ').toLowerCase();
+                return n.includes(q);
+            });
             renderStudentGrid(filtered);
         }
 
