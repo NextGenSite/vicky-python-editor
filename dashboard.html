@@ -75,7 +75,7 @@
                     style="display:none;background:var(--card);border:1px solid var(--border2);border-radius:10px;color:var(--text);padding:7px 12px;font-size:0.82rem;font-family:inherit;cursor:pointer;outline:none"
                     onchange="switchClass(this.value)"></select>
                 <button class="topbar-btn" id="dashThemeToggle" onclick="toggleDashTheme()">🌙 Dunkel</button>
-                <button class="topbar-btn" onclick="loadAll()">↻ Aktualisieren</button>
+                <button class="topbar-btn" onclick="refreshAll()">↻ Aktualisieren</button>
             </div>
         </div>
 
@@ -816,6 +816,11 @@
             if (_currentClassId === classId) _currentClassId = null;
             await loadClasses();
             await loadAll();
+        }
+
+        async function refreshAll() {
+            await Promise.all([loadAll(), loadTasks()]);
+            if (_selectedTaskId) openTaskDetail(_selectedTaskId);
         }
 
         // ── Tasks ─────────────────────────────────────────────────────────────────
