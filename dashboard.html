@@ -676,9 +676,6 @@
             el.innerHTML = createBtn + _classes.map(cls => {
                 const isActive = cls.id === _currentClassId;
                 const stuCount = isActive ? _students.length : '–';
-                const statusBadge = isActive
-                    ? '<span style="font-size:0.75rem;color:var(--green);font-weight:700;white-space:nowrap">✓ Aktiv</span>'
-                    : '<span style="font-size:0.75rem;color:var(--muted);font-weight:600;white-space:nowrap">○ Nicht aktiv</span>';
                 return `<div class="class-row" style="cursor:${isActive ? 'default' : 'pointer'}" ${!isActive ? `onclick="switchClass('${cls.id}')"` : ''}>
                 <div class="class-icon" style="font-size:1.5rem">🏫</div>
                 <div style="flex:1;min-width:0">
@@ -692,7 +689,6 @@
                     </div>
                 </div>
                 <button class="topbar-btn" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(cls.join_code)}').then(()=>{this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Kopieren',1500)})">📋 Kopieren</button>
-                ${statusBadge}
             </div>`;
             }).join('');
         }
