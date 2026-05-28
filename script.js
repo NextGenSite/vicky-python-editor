@@ -1099,7 +1099,6 @@ sys.modules['turtle'] = _turtle_mod
         async function submitTask() {
             const tab = getActiveTab();
             if (!tab?.taskId) return;
-            if (!confirm('Aufgabe jetzt abgeben? Du kannst danach noch weiter speichern.')) return;
             const btn = document.getElementById('submitTaskBtn');
             const origText = btn.textContent;
             btn.disabled = true; btn.textContent = '…';
@@ -1470,6 +1469,7 @@ sys.modules['turtle'] = _turtle_mod
             _activeTabId = id;
             _loadTabIntoEditor(id);
             renderTabBar();
+            updateTaskModeUI();
         }
 
         function switchTab(id) {
@@ -1487,9 +1487,7 @@ sys.modules['turtle'] = _turtle_mod
             editor.setValue(tab.code);
             const descEl = document.getElementById('descInput');
             if (descEl) descEl.value = tab.description;
-            // Aktualisieren-Button nur zeigen wenn Tab ein gespeichertes Projekt hat
-            const updateBtn = document.getElementById('updateProjectBtn');
-            if (updateBtn) updateBtn.style.display = tab.projectId ? 'inline-flex' : 'none';
+            // Aktualisieren-Button wird von updateTaskModeUI() gesteuert
             editor.focus();
             updateAiContext();
         }
@@ -1504,6 +1502,7 @@ sys.modules['turtle'] = _turtle_mod
                 _loadTabIntoEditor(_activeTabId);
             }
             renderTabBar();
+            updateTaskModeUI();
         }
 
         function renameTab(id) {
