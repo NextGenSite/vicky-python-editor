@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard – Wickie</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+
+    <!-- Loading -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Dashboard wird geladen…</div>
+    </div>
+
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="logo.png" alt="Wickie">
+            <div class="sidebar-logo-text">
+                <div class="sidebar-logo-title">Wickie</div>
+                <div class="sidebar-logo-sub">Lehrer-Dashboard</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Navigation</div>
+            <button class="nav-item active" data-view="overview" onclick="switchView('overview', this)">
+                <span class="nav-icon">🏠</span> Übersicht
+            </button>
+            <button class="nav-item" data-view="students" onclick="switchView('students', this)">
+                <span class="nav-icon">👥</span> Schüler
+                <span class="nav-badge" id="navBadgeStudents">0</span>
+            </button>
+            <button class="nav-item" data-view="projects" onclick="switchView('projects', this)">
+                <span class="nav-icon">🗃️</span> Alle Projekte
+                <span class="nav-badge" id="navBadgeProjects">0</span>
+            </button>
+            <button class="nav-item" data-view="classes" onclick="switchView('classes', this)">
+                <span class="nav-icon">🏫</span> Klassen
+                <span class="nav-badge" id="navBadgeClasses">0</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn-back" onclick="openDashProfileModal()">👤 Profil bearbeiten</button>
+            <button class="btn-back" onclick="window.location.href='index.html'">← Zurück zum Editor</button>
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+                <div>
+                    <div class="sidebar-user-name" id="sidebarName">Lehrer</div>
+                    <div class="sidebar-user-role">💼 Lehrkraft</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="topbar-title" id="topbarTitle">Übersicht</div>
+                <div class="topbar-sub" id="topbarSub">Willkommen zurück</div>
+            </div>
+            <div class="topbar-right">
+                <select id="classSelector"
+                    style="display:none;background:var(--card);border:1px solid var(--border2);border-radius:10px;color:var(--text);padding:7px 12px;font-size:0.82rem;font-family:inherit;cursor:pointer;outline:none"
+                    onchange="switchClass(this.value)"></select>
+                <button class="topbar-btn" id="dashThemeToggle" onclick="toggleDashTheme()">🌙 Dunkel</button>
+                <button class="topbar-btn" onclick="loadAll()">↻ Aktualisieren</button>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- ÜBERSICHT -->
+            <div class="view active" id="view-overview">
+                <div id="classInfoCard" style="margin-bottom:20px"></div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">👥</div>
+                        <div>
+                            <div class="stat-num" id="statS">—</div>
+                            <div class="stat-label">Schüler</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">🗃️</div>
+                        <div>
+                            <div class="stat-num" id="statP">—</div>
+                            <div class="stat-label">Projekte</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">⚡</div>
+                        <div>
+                            <div class="stat-num" id="statT">—</div>
+                            <div class="stat-label">Heute aktiv</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">📝</div>
+                        <div>
+                            <div class="stat-num" id="statR">—</div>
+                            <div class="stat-label">Diese Woche</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Neueste Aktivität</div>
+                        <div class="section-sub">Die zuletzt gespeicherten Projekte</div>
+                    </div>
+                </div>
+
+                <div class="recent-table">
+                    <div class="recent-table-header">
+                        <div>Projekt</div>
+                        <div>Schüler</div>
+                        <div>Klasse</div>
+                        <div>Datum</div>
+                        <div>Status</div>
+                    </div>
+                    <div id="recentList">
+                        <div style="padding:20px;color:var(--muted);font-size:0.85rem">Lade…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCHÜLER -->
+            <div class="view" id="view-students">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="studentSearch" placeholder="Schüler suchen…" oninput="filterStudents()">
+                </div>
+                <div class="students-grid" id="studentsGrid">
+                    <div style="color:var(--muted);font-size:0.85rem">Lade…</div>
+                </div>
+            </div>
+
+            <!-- SCHÜLER DETAIL (inline in students view) -->
+            <div class="view" id="view-student-detail">
+                <button class="topbar-btn" style="margin-bottom:20px"
+                    onclick="switchView('students', document.querySelector('[data-view=students]'))">← Zurück zur
+                    Liste</button>
+                <div class="detail-header" id="detailHeader"></div>
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Projekte</div>
+                    </div>
+                </div>
+                <div class="projects-list" id="detailProjects"></div>
+            </div>
+
+            <!-- KLASSEN -->
+            <div class="view" id="view-classes">
+                <div id="classesViewContent">
+                    <div style="color:var(--muted);font-size:0.85rem">Lade…</div>
+                </div>
+            </div>
+
+            <!-- ALLE PROJEKTE -->
+            <div class="view" id="view-projects">
+                <div id="projectFilters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="projectSearch" placeholder="Projekt oder Schüler suchen…"
+                        oninput="filterProjects()">
+                </div>
+                <div class="all-projects-list" id="allProjectsList">
+                    <div style="color:var(--muted);font-size:0.85rem">Lade…</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="dashProfileModal" style="display:none" onclick="if(event.target===this)closeDashProfileModal()">
+        <div class="modal-box" style="max-width:420px">
+            <button class="modal-close" onclick="closeDashProfileModal()">✕</button>
+            <div class="modal-title">👤 Profil bearbeiten</div>
+            <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Vorname</label>
+            <input class="modal-input" type="text" id="dashProfileFirstName" placeholder="Vorname" autocomplete="given-name">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin:10px 0 4px">Nachname</label>
+            <input class="modal-input" type="text" id="dashProfileLastName" placeholder="Nachname" autocomplete="family-name">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin:10px 0 4px">E-Mail</label>
+            <input class="modal-input" type="email" id="dashProfileEmail" placeholder="deine@email.de" autocomplete="email">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin:10px 0 4px">Neues Passwort <span style="font-weight:400;opacity:0.6">(leer lassen = kein Wechsel)</span></label>
+            <input class="modal-input" type="password" id="dashProfilePassword" placeholder="Mindestens 6 Zeichen">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin:10px 0 4px">Passwort bestätigen</label>
+            <input class="modal-input" type="password" id="dashProfilePasswordConfirm" placeholder="Passwort wiederholen" style="margin-bottom:14px">
+            <div class="modal-error" id="dashProfileError"></div>
+            <div class="modal-error" id="dashProfileSuccess" style="color:var(--green)"></div>
+            <div style="display:flex;gap:10px">
+                <button class="topbar-btn primary" style="flex:1" id="dashProfileSaveBtn" onclick="saveDashProfile()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Class Modal -->
+    <div class="modal-overlay" id="createClassModal" style="display:none"
+        onclick="if(event.target===this)closeCreateClassModal()">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeCreateClassModal()">✕</button>
+            <div class="modal-title">🏫 Klasse erstellen</div>
+            <div class="modal-sub">Wähle einen Namen für deine Klasse. Ein Beitrittscode wird automatisch generiert.
+            </div>
+            <label
+                style="font-size:0.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">Klassenname</label>
+            <input class="modal-input" type="text" id="newClassName" placeholder="z.B. 5a, Klasse 7b, Montag-Gruppe…"
+                maxlength="40">
+            <div class="modal-error" id="createClassError"></div>
+            <div style="display:flex;gap:10px">
+                <button class="topbar-btn" style="flex:1" onclick="closeCreateClassModal()">Abbrechen</button>
+                <button class="topbar-btn primary" style="flex:1" id="createClassBtn"
+                    onclick="createClass()">Erstellen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pqxpxeemhdjpipggyhgz.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_jbJW0m89PVGXoT6_rmgQ0Q_-4DKlNVk';
+        const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let _students = [];
+        let _submissions = [];
+        let _profileMap = {};
+        let _classes = [];
+        let _currentClassId = null;
+        let _teacherId = null;
+        let _projectFilterClass = null;
+        let _projectFilterStudent = null;
+
+        const CLASS_PALETTE = ['#89b4fa','#cba6f7','#a6e3a1','#f9e2af','#f38ba8','#89dceb','#fab387'];
+        function classColor(classId) {
+            const idx = _classes.findIndex(c => c.id === classId);
+            return CLASS_PALETTE[idx >= 0 ? idx % CLASS_PALETTE.length : 0];
+        }
+
+        // ── Theme ─────────────────────────────────────────────────────────────────
+        function applyDashTheme(dark) {
+            document.body.classList.toggle('light', !dark);
+            const btn = document.getElementById('dashThemeToggle');
+            if (btn) { btn.textContent = dark ? '🌙 Dunkel' : '☀️ Hell'; }
+            localStorage.setItem('wickie-theme', dark ? 'dark' : 'light');
+        }
+        function toggleDashTheme() {
+            const isDark = !document.body.classList.contains('light');
+            applyDashTheme(!isDark);
+        }
+        applyDashTheme(localStorage.getItem('wickie-theme') !== 'light');
+
+        // ── Init ──────────────────────────────────────────────────────────────────
+        async function init() {
+            const { data } = await _sb.auth.getSession();
+            const user = data.session?.user;
+            if (!user) { window.location.href = 'index.html'; return; }
+
+            const role = user.user_metadata?.role;
+            if (role !== 'teacher') { window.location.href = 'index.html'; return; }
+
+            _teacherId = user.id;
+            const name = user.user_metadata?.name || user.email;
+            document.getElementById('sidebarName').textContent = name;
+            document.getElementById('sidebarAvatar').textContent = name[0].toUpperCase();
+
+            await loadClasses();
+            await loadAll();
+            document.getElementById('loadingScreen').style.display = 'none';
+        }
+
+        async function loadClasses() {
+            const { data, error } = await _sb.from('classes').select('*').eq('teacher_id', _teacherId).order('created_at');
+            if (error) console.error('loadClasses error:', error);
+            _classes = data || [];
+            _currentClassId = _classes[0]?.id ?? null;
+            renderClassSelector();
+            renderClassesView();
+            renderClassInfo();
+            document.getElementById('navBadgeClasses').textContent = _classes.length;
+        }
+
+        async function loadAll() {
+            try {
+                let studentsQuery = _sb.from('profiles').select('*').eq('role', 'student').order('name');
+                if (_currentClassId) studentsQuery = studentsQuery.eq('class_id', _currentClassId);
+
+                const [{ data: students, error: e1 }, { data: subs, error: e2 }] = await Promise.all([
+                    studentsQuery,
+                    _sb.from('submissions').select('*').order('updated_at', { ascending: false })
+                ]);
+                if (e1) console.error('profiles error:', e1);
+                if (e2) console.error('submissions error:', e2);
+
+                _students = students || [];
+                const studentIds = new Set(_students.map(s => s.id));
+                _submissions = (subs || []).filter(s => studentIds.has(s.user_id));
+                _profileMap = {};
+                for (const s of _students) _profileMap[s.id] = s;
+
+                document.getElementById('navBadgeStudents').textContent = _students.length;
+                document.getElementById('navBadgeProjects').textContent = _submissions.length;
+
+                renderStats();
+                renderRecent();
+                renderStudentsGrid();
+                renderAllProjects();
+                renderClassInfo();
+                renderClassesView();
+            } catch (err) {
+                console.error('loadAll error:', err);
+            }
+        }
+
+        // ── Stats ─────────────────────────────────────────────────────────────────
+        function renderStats() {
+            const now = new Date();
+            const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+            const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
+
+            const todayActive = new Set(_submissions
+                .filter(s => new Date(s.updated_at || s.created_at) >= todayStart)
+                .map(s => s.user_id)).size;
+
+            const weekCount = _submissions.filter(s =>
+                new Date(s.updated_at || s.created_at) >= weekStart).length;
+
+            document.getElementById('statS').textContent = _students.length;
+            document.getElementById('statP').textContent = _submissions.length;
+            document.getElementById('statT').textContent = todayActive;
+            document.getElementById('statR').textContent = weekCount;
+        }
+
+        // ── Recent ────────────────────────────────────────────────────────────────
+        function renderRecent() {
+            const recent = _submissions.slice(0, 15);
+            const el = document.getElementById('recentList');
+            if (!recent.length) {
+                el.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.85rem;text-align:center">Noch keine Aktivität</div>';
+                return;
+            }
+            el.innerHTML = recent.map(sub => {
+                const student = _profileMap[sub.user_id];
+                const color = avatarColor(student?.name || '?');
+                const initial = (student?.name || '?')[0].toUpperCase();
+                const date = fmtDate(sub.updated_at || sub.created_at);
+                const cls = _classes.find(c => c.id === student?.class_id);
+                const col = cls ? classColor(cls.id) : 'var(--muted)';
+                const clsBadge = cls
+                    ? `<span class="class-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${esc(cls.name)}</span>`
+                    : '<span style="color:var(--muted);font-size:0.8rem">—</span>';
+                return `<div class="recent-row" onclick="openStudentDetail('${sub.user_id}')">
+                <div>
+                    <div class="recent-title">${esc(sub.title || 'Unbenannt')}</div>
+                    ${sub.description ? `<div class="recent-desc">${esc(sub.description)}</div>` : ''}
+                </div>
+                <div class="recent-student">
+                    <div class="all-mini-avatar" style="background:${color}">${initial}</div>
+                    ${esc(student?.name || '—')}
+                </div>
+                <div>${clsBadge}</div>
+                <div class="recent-date">${date}</div>
+                <div><span class="pill" style="font-size:0.68rem;padding:3px 8px">Python</span></div>
+            </div>`;
+            }).join('');
+        }
+
+        // ── Students Grid ─────────────────────────────────────────────────────────
+        function renderStudentsGrid(list) {
+            list = list ?? _students;
+            const el = document.getElementById('studentsGrid');
+            if (!list.length) {
+                el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>Keine Schüler gefunden</p></div>';
+                return;
+            }
+            el.innerHTML = list.map(s => {
+                const subs = _submissions.filter(p => p.user_id === s.id);
+                const last = subs[0];
+                const color = avatarColor(s.name);
+                const initial = (s.name || '?')[0].toUpperCase();
+                const cls = _classes.find(c => c.id === s.class_id);
+                const clsLabel = cls ? `🎓 Schüler/in aus ${esc(cls.name)}` : '🎓 Schüler/in';
+                return `<div class="student-card" onclick="openStudentDetail('${s.id}')">
+                <div class="student-card-top">
+                    <div class="student-avatar" style="background:${color}">${initial}</div>
+                    <div style="flex:1;min-width:0">
+                        <div class="student-name">${esc(s.name)}</div>
+                        <div class="student-email">${clsLabel}</div>
+                    </div>
+                </div>
+                <div class="student-card-footer">
+                    <span class="pill">🗃️ ${subs.length} Projekt${subs.length !== 1 ? 'e' : ''}</span>
+                    <span class="time-label">🕐 ${relTime(last?.updated_at || last?.created_at)}</span>
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+        function filterStudents() {
+            const q = document.getElementById('studentSearch').value.toLowerCase();
+            renderStudentsGrid(_students.filter(s => s.name.toLowerCase().includes(q)));
+        }
+
+        // ── Student Detail ────────────────────────────────────────────────────────
+        function openStudentDetail(studentId) {
+            const student = _profileMap[studentId];
+            if (!student) return;
+
+            const subs = _submissions.filter(s => s.user_id === studentId);
+            const color = avatarColor(student.name);
+            const initial = (student.name || '?')[0].toUpperCase();
+            const cls = _classes.find(c => c.id === student.class_id);
+            const clsLabel = cls ? `🎓 Schüler/in aus ${esc(cls.name)}` : '🎓 Schüler/in';
+
+            document.getElementById('detailHeader').innerHTML = `
+            <div class="detail-avatar" style="background:${color}">${initial}</div>
+            <div>
+                <div class="detail-name">${esc(student.name)}</div>
+                <div class="detail-email">${clsLabel}</div>
+                <div class="detail-stats">
+                    <div class="detail-stat"><strong>${subs.length}</strong> Projekte</div>
+                    <div class="detail-stat"><strong>${relTime(subs[0]?.updated_at || subs[0]?.created_at)}</strong> zuletzt aktiv</div>
+                </div>
+            </div>`;
+
+            if (!subs.length) {
+                document.getElementById('detailProjects').innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>Noch keine Projekte gespeichert</p></div>';
+            } else {
+                document.getElementById('detailProjects').innerHTML = subs.map((sub, i) => {
+                    const date = fmtDate(sub.updated_at || sub.created_at);
+                    return `<div class="project-card">
+                    <div class="project-head" onclick="toggleCode(this)">
+                        <div class="project-icon">📋</div>
+                        <div style="flex:1;min-width:0">
+                            <div class="project-title">${esc(sub.title || 'Unbenannt')}</div>
+                            ${sub.description ? `<div class="project-desc">${esc(sub.description)}</div>` : ''}
+                        </div>
+                        <div class="project-date">${date}</div>
+                        <span class="project-chevron">▼</span>
+                    </div>
+                    <div class="project-body">
+                        <div class="code-toolbar">
+                            <span class="code-toolbar-label">Python Code</span>
+                            <button class="code-copy-btn" onclick="copyCode(this, '${encodeURIComponent(sub.code || '')}')">📋 Kopieren</button>
+                        </div>
+                        <pre class="code-pre">${esc(sub.code || '')}</pre>
+                    </div>
+                </div>`;
+                }).join('');
+            }
+
+            switchView('student-detail', null);
+            document.getElementById('topbarTitle').textContent = student.name;
+            document.getElementById('topbarSub').textContent = `${subs.length} Projekte`;
+        }
+
+        function toggleCode(headEl) {
+            const body = headEl.nextElementSibling;
+            const chev = headEl.querySelector('.project-chevron');
+            body.classList.toggle('open');
+            chev.classList.toggle('open');
+        }
+
+        function copyCode(btn, encoded) {
+            navigator.clipboard.writeText(decodeURIComponent(encoded)).then(() => {
+                btn.textContent = '✓ Kopiert!';
+                setTimeout(() => btn.textContent = '📋 Kopieren', 1500);
+            });
+        }
+
+        // ── All Projects ──────────────────────────────────────────────────────────
+        function renderProjectFilters() {
+            const el = document.getElementById('projectFilters');
+            if (!el) return;
+            const allActive = !_projectFilterClass && !_projectFilterStudent;
+            let html = `<button class="filter-chip${allActive ? ' active' : ''}" onclick="setProjectFilter(null,null)">Alle</button>`;
+            for (const cls of _classes) {
+                const col = classColor(cls.id);
+                const isActive = _projectFilterClass === cls.id && !_projectFilterStudent;
+                html += `<button class="filter-chip${isActive ? ' active' : ''}" onclick="setProjectFilter('${cls.id}',null)">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:5px;vertical-align:middle"></span>${esc(cls.name)}</button>`;
+            }
+            if (_projectFilterStudent) {
+                const s = _profileMap[_projectFilterStudent];
+                if (s) html += `<button class="filter-chip active" onclick="setProjectFilter(null,null)">👤 ${esc(s.name)} ✕</button>`;
+            }
+            el.innerHTML = html;
+        }
+
+        function setProjectFilter(classId, studentId) {
+            _projectFilterClass = classId;
+            _projectFilterStudent = studentId;
+            renderProjectFilters();
+            applyProjectFilters();
+        }
+
+        function applyProjectFilters() {
+            const q = document.getElementById('projectSearch').value.toLowerCase();
+            let list = _submissions;
+            if (_projectFilterClass) {
+                const ids = new Set(_students.filter(s => s.class_id === _projectFilterClass).map(s => s.id));
+                list = list.filter(sub => ids.has(sub.user_id));
+            }
+            if (_projectFilterStudent) {
+                list = list.filter(sub => sub.user_id === _projectFilterStudent);
+            }
+            if (q) {
+                list = list.filter(sub => {
+                    const st = _profileMap[sub.user_id];
+                    return (sub.title || '').toLowerCase().includes(q) || (st?.name || '').toLowerCase().includes(q);
+                });
+            }
+            renderAllProjects(list);
+        }
+
+        function renderAllProjects(list) {
+            list = list ?? _submissions;
+            const el = document.getElementById('allProjectsList');
+            renderProjectFilters();
+            if (!list.length) {
+                el.innerHTML = '<div class="empty-state"><div class="empty-icon">🗃️</div><p>Keine Projekte gefunden</p></div>';
+                return;
+            }
+
+            // Group submissions by student
+            const groups = new Map();
+            for (const sub of list) {
+                if (!groups.has(sub.user_id)) groups.set(sub.user_id, []);
+                groups.get(sub.user_id).push(sub);
+            }
+
+            el.innerHTML = [...groups.entries()].map(([uid, subs]) => {
+                const student = _profileMap[uid];
+                const color = avatarColor(student?.name || '?');
+                const initial = (student?.name || '?')[0].toUpperCase();
+                const cls = _classes.find(c => c.id === student?.class_id);
+                const col = cls ? classColor(cls.id) : 'var(--muted)';
+                const clsBadge = cls
+                    ? `<span class="class-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${esc(cls.name)}</span>`
+                    : '';
+
+                const projectRows = subs.map(sub => {
+                    const date = fmtDate(sub.updated_at || sub.created_at);
+                    return `<div class="grouped-project-item">
+                        <div class="grouped-project-head" onclick="toggleCode(this)">
+                            <div class="project-icon" style="width:30px;height:30px;font-size:1rem">📋</div>
+                            <div style="flex:1;min-width:0">
+                                <div class="project-title">${esc(sub.title || 'Unbenannt')}</div>
+                                ${sub.description ? `<div class="project-desc">${esc(sub.description)}</div>` : ''}
+                            </div>
+                            <div class="project-date">${date}</div>
+                            <span class="project-chevron">▼</span>
+                        </div>
+                        <div class="project-body">
+                            <div class="code-toolbar">
+                                <span class="code-toolbar-label">Python Code</span>
+                                <button class="code-copy-btn" onclick="copyCode(this, '${encodeURIComponent(sub.code || '')}')">📋 Kopieren</button>
+                            </div>
+                            <pre class="code-pre">${esc(sub.code || '')}</pre>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                return `<div class="student-group">
+                    <div class="student-group-header" onclick="toggleStudentGroup(this)">
+                        <div class="all-mini-avatar" style="background:${color};width:34px;height:34px;font-size:0.85rem">${initial}</div>
+                        <span class="student-group-name">${esc(student?.name || '—')}</span>
+                        ${clsBadge}
+                        <span class="student-group-count">${subs.length} Projekt${subs.length !== 1 ? 'e' : ''}</span>
+                        <span class="project-chevron open" style="margin-left:auto">▼</span>
+                    </div>
+                    <div class="student-group-body open">${projectRows}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function toggleStudentGroup(headerEl) {
+            const body = headerEl.nextElementSibling;
+            const chev = headerEl.querySelector('.project-chevron');
+            body.classList.toggle('open');
+            chev.classList.toggle('open');
+        }
+
+        function filterProjects() {
+            applyProjectFilters();
+        }
+
+        // ── Navigation ────────────────────────────────────────────────────────────
+        const viewTitles = {
+            overview: ['Übersicht', 'Willkommen zurück'],
+            students: ['Schüler', 'Schüler deiner Klasse'],
+            'student-detail': ['', ''],
+            projects: ['Alle Projekte', 'Projektarchiv deiner Klasse'],
+            classes: ['Klassen', 'Erstelle und verwalte deine Klassen']
+        };
+
+        function switchView(name, btnEl) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('view-' + name).classList.add('active');
+            if (btnEl) btnEl.classList.add('active');
+            const [title, sub] = viewTitles[name] || ['', ''];
+            if (title) document.getElementById('topbarTitle').textContent = title;
+            if (sub) document.getElementById('topbarSub').textContent = sub;
+        }
+
+        // ── Class Info Card (overview) ────────────────────────────────────────────
+        function renderClassInfo() {
+            const el = document.getElementById('classInfoCard');
+            if (!_classes.length) {
+                el.innerHTML = `<div class="no-class-card">
+                <div class="nc-icon">🏫</div>
+                <p>Du hast noch keine Klasse erstellt.<br>Erstelle jetzt deine erste Klasse und teile den Beitrittscode mit deinen Schülern.</p>
+                <button class="topbar-btn primary" onclick="openCreateClassModal()">+ Klasse erstellen</button>
+            </div>`;
+                return;
+            }
+            const cls = _classes.find(c => c.id === _currentClassId) || _classes[0];
+            const stuCount = _students.length;
+            el.innerHTML = `<div class="class-card">
+            <div class="class-card-left">
+                <div class="class-icon">🏫</div>
+                <div>
+                    <div class="class-name">${esc(cls.name)}</div>
+                    <div class="class-sub">${stuCount} Schüler${stuCount !== 1 ? '' : ''} · Aktive Klasse</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <div class="join-code-box">
+                    <div>
+                        <div class="join-code-label">Beitrittscode</div>
+                        <div class="join-code-value">${esc(cls.join_code)}</div>
+                    </div>
+                </div>
+                <button class="topbar-btn" onclick="copyJoinCode('${esc(cls.join_code)}')" id="copyCodeBtn">📋 Kopieren</button>
+                <button class="topbar-btn" onclick="openCreateClassModal()">+ Neue Klasse</button>
+            </div>
+        </div>`;
+        }
+
+        function copyJoinCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById('copyCodeBtn');
+                if (btn) { btn.textContent = '✓ Kopiert!'; setTimeout(() => btn.textContent = '📋 Kopieren', 1500); }
+            });
+        }
+
+        // ── Classes View ──────────────────────────────────────────────────────────
+        function renderClassesView() {
+            const el = document.getElementById('classesViewContent');
+            const createBtn = `<button class="topbar-btn primary" onclick="openCreateClassModal()" style="margin-bottom:20px">+ Neue Klasse erstellen</button>`;
+            if (!_classes.length) {
+                el.innerHTML = createBtn + `<div class="no-class-card">
+                <div class="nc-icon">🏫</div>
+                <p>Noch keine Klasse erstellt. Erstelle eine Klasse und teile den Beitrittscode mit deinen Schülern.</p>
+            </div>`;
+                return;
+            }
+            el.innerHTML = createBtn + _classes.map(cls => {
+                const isActive = cls.id === _currentClassId;
+                const stuCount = isActive ? _students.length : '–';
+                const statusBadge = isActive
+                    ? '<span style="font-size:0.75rem;color:var(--green);font-weight:700;white-space:nowrap">✓ Aktiv</span>'
+                    : '<span style="font-size:0.75rem;color:var(--muted);font-weight:600;white-space:nowrap">○ Nicht aktiv</span>';
+                return `<div class="class-row" style="cursor:${isActive ? 'default' : 'pointer'}" ${!isActive ? `onclick="switchClass('${cls.id}')"` : ''}>
+                <div class="class-icon" style="font-size:1.5rem">🏫</div>
+                <div style="flex:1;min-width:0">
+                    <div class="class-row-name">${esc(cls.name)}</div>
+                    <div class="class-row-sub">${stuCount} Schüler · Erstellt ${fmtDate(cls.created_at)}</div>
+                </div>
+                <div class="join-code-box" style="gap:14px">
+                    <div>
+                        <div class="join-code-label">Beitrittscode</div>
+                        <div class="class-row-code">${esc(cls.join_code)}</div>
+                    </div>
+                </div>
+                <button class="topbar-btn" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(cls.join_code)}').then(()=>{this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Kopieren',1500)})">📋 Kopieren</button>
+                ${statusBadge}
+            </div>`;
+            }).join('');
+        }
+
+        // ── Class Selector (topbar) ───────────────────────────────────────────────
+        function renderClassSelector() {
+            const sel = document.getElementById('classSelector');
+            if (_classes.length <= 1) { sel.style.display = 'none'; return; }
+            sel.style.display = 'inline-block';
+            sel.innerHTML = _classes.map(c =>
+                `<option value="${c.id}"${c.id === _currentClassId ? ' selected' : ''}>${esc(c.name)}</option>`
+            ).join('');
+        }
+
+        function switchClass(classId) {
+            _currentClassId = classId || _classes[0]?.id || null;
+            loadAll();
+        }
+
+        // ── Dashboard Profile Modal ───────────────────────────────────────────────
+        async function openDashProfileModal() {
+            const { data: { user } } = await _sb.auth.getUser();
+            const name = user?.user_metadata?.name || '';
+            const parts = name.trim().split(' ');
+            document.getElementById('dashProfileFirstName').value = parts[0] || '';
+            document.getElementById('dashProfileLastName').value = parts.slice(1).join(' ') || '';
+            document.getElementById('dashProfileEmail').value = user?.email || '';
+            document.getElementById('dashProfilePassword').value = '';
+            document.getElementById('dashProfilePasswordConfirm').value = '';
+            document.getElementById('dashProfileError').style.display = 'none';
+            document.getElementById('dashProfileSuccess').style.display = 'none';
+            document.getElementById('dashProfileModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('dashProfileFirstName').focus(), 200);
+        }
+
+        function closeDashProfileModal() {
+            document.getElementById('dashProfileModal').style.display = 'none';
+        }
+
+        async function saveDashProfile() {
+            const firstName = document.getElementById('dashProfileFirstName').value.trim();
+            const lastName  = document.getElementById('dashProfileLastName').value.trim();
+            const email     = document.getElementById('dashProfileEmail').value.trim();
+            const pw        = document.getElementById('dashProfilePassword').value;
+            const pw2       = document.getElementById('dashProfilePasswordConfirm').value;
+            const errEl     = document.getElementById('dashProfileError');
+            const successEl = document.getElementById('dashProfileSuccess');
+            const btn       = document.getElementById('dashProfileSaveBtn');
+
+            errEl.style.display = 'none';
+            successEl.style.display = 'none';
+
+            if (!firstName) { errEl.textContent = 'Vorname darf nicht leer sein.'; errEl.style.display = 'block'; return; }
+            if (pw && pw.length < 6) { errEl.textContent = 'Passwort muss mindestens 6 Zeichen haben.'; errEl.style.display = 'block'; return; }
+            if (pw && pw !== pw2) { errEl.textContent = 'Passwörter stimmen nicht überein.'; errEl.style.display = 'block'; return; }
+
+            btn.disabled = true; btn.textContent = '…';
+
+            const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+            const { data: { user } } = await _sb.auth.getUser();
+
+            const authUpdates = { data: { name: fullName } };
+            if (email && email !== user.email) authUpdates.email = email;
+            if (pw) authUpdates.password = pw;
+
+            const { error: authErr } = await _sb.auth.updateUser(authUpdates);
+            if (authErr) {
+                errEl.textContent = 'Fehler: ' + authErr.message;
+                errEl.style.display = 'block';
+                btn.disabled = false; btn.textContent = 'Speichern';
+                return;
+            }
+
+            await _sb.from('profiles').update({ name: fullName }).eq('id', user.id);
+
+            document.getElementById('sidebarName').textContent = fullName;
+            document.getElementById('sidebarAvatar').textContent = fullName[0].toUpperCase();
+
+            btn.disabled = false; btn.textContent = 'Speichern';
+            successEl.textContent = email !== user.email
+                ? '✓ Gespeichert. Bitte bestätige die neue E-Mail in deinem Postfach.'
+                : '✓ Profil gespeichert!';
+            successEl.style.display = 'block';
+        }
+
+        // ── Create Class ──────────────────────────────────────────────────────────
+        function openCreateClassModal() {
+            document.getElementById('newClassName').value = '';
+            document.getElementById('createClassError').style.display = 'none';
+            document.getElementById('createClassModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('newClassName').focus(), 50);
+        }
+
+        function closeCreateClassModal() {
+            document.getElementById('createClassModal').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeCreateClassModal();
+            if (e.key === 'Enter' && document.getElementById('createClassModal').style.display === 'flex') createClass();
+        });
+
+        async function createClass() {
+            const name = document.getElementById('newClassName').value.trim();
+            const errEl = document.getElementById('createClassError');
+            const btn = document.getElementById('createClassBtn');
+            if (!name) { errEl.textContent = 'Bitte einen Klassennamen eingeben.'; errEl.style.display = 'block'; return; }
+            btn.disabled = true; btn.textContent = '…';
+            const joinCode = generateJoinCode();
+            const { data, error } = await _sb.from('classes').insert({
+                name, join_code: joinCode, teacher_id: _teacherId
+            }).select().single();
+            btn.disabled = false; btn.textContent = 'Erstellen';
+            if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+            _classes.push(data);
+            _currentClassId = data.id;
+            closeCreateClassModal();
+            renderClassSelector();
+            renderClassesView();
+            document.getElementById('navBadgeClasses').textContent = _classes.length;
+            renderClassInfo();
+        }
+
+        function generateJoinCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
+        function avatarColor(name) {
+            const c = ['#f38ba8', '#fab387', '#f9e2af', '#a6e3a1', '#89dceb', '#89b4fa', '#cba6f7', '#eba0ac'];
+            let h = 0;
+            for (const ch of (name || '?')) h = (h * 31 + ch.charCodeAt(0)) & 0xffffffff;
+            return c[Math.abs(h) % c.length];
+        }
+
+        function relTime(d) {
+            if (!d) return 'Noch nie';
+            const diff = Date.now() - new Date(d).getTime();
+            const min = Math.floor(diff / 60000), hrs = Math.floor(min / 60), days = Math.floor(hrs / 24);
+            if (min < 2) return 'Gerade eben';
+            if (min < 60) return `vor ${min} Min.`;
+            if (hrs < 24) return `vor ${hrs} Std.`;
+            if (days === 1) return 'Gestern';
+            if (days < 7) return `vor ${days} Tagen`;
+            return new Date(d).toLocaleDateString('de-DE');
+        }
+
+        function fmtDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function esc(s) {
+            return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,456 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wickie - Python Online Editor</title>
+
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link id="cmTheme" rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <img src="logo.png" alt="Wickie Python Logo">
+            <!-- svg hidden -->
+            <svg viewBox="0 0 58 54" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
+                <defs>
+                    <linearGradient id="wBdr" x1="0" y1="0" x2="58" y2="54" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#3bbdb080" />
+                        <stop offset="100%" stop-color="#89dceb80" />
+                    </linearGradient>
+                    <linearGradient id="wHlm" x1="20" y1="7" x2="20" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#60ddd6" />
+                        <stop offset="55%" stop-color="#1fbbb2" />
+                        <stop offset="100%" stop-color="#0a8880" />
+                    </linearGradient>
+                    <radialGradient id="wShn" cx="34%" cy="24%" r="50%" gradientUnits="objectBoundingBox">
+                        <stop offset="0%" stop-color="white" stop-opacity="0.48" />
+                        <stop offset="100%" stop-color="white" stop-opacity="0" />
+                    </radialGradient>
+                    <linearGradient id="wHrn" x1="0" y1="4" x2="4" y2="18" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" />
+                        <stop offset="100%" stop-color="#d8d4c8" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Badge -->
+                <rect x="0.5" y="0.5" width="57" height="53" rx="11" fill="#0d0d1c" stroke="url(#wBdr)" />
+
+                <!-- ══ GEDANKENBLASE (oben rechts) ══ -->
+                <circle cx="30" cy="18" r="1.1" fill="#3a3a5c" />
+                <circle cx="34" cy="13" r="1.4" fill="#3a3a5c" />
+                <circle cx="38" cy="9" r="1.7" fill="#3a3a5c" />
+                <ellipse cx="46" cy="7" rx="8.5" ry="6" fill="#1c1c34" stroke="#3a3a5c" stroke-width="0.8" />
+                <text x="41" y="11" font-family="'Inter','Segoe UI',sans-serif" font-size="9" font-weight="800"
+                    fill="#4B8BBE">p</text>
+                <text x="47" y="11" font-family="'Inter','Segoe UI',sans-serif" font-size="9" font-weight="800"
+                    fill="#FFE873">y</text>
+
+                <!-- ══ LANGES GOLDBLONDES HAAR (hinter allem) ══ -->
+                <path d="M 5 24 C 5 33 5 43 6 53.5 L 17 53.5 C 17 43 17 33 17 24 Z" fill="#f5c520" />
+                <path d="M 23 24 C 23 33 25 43 27 53.5 L 35 53.5 C 33 43 31 33 30 24 Z" fill="#f5c520" />
+                <path d="M 7.5 26 C 7.5 35 7.5 44 8.5 53" stroke="#ffe050" stroke-width="1.5" opacity="0.5" fill="none"
+                    stroke-linecap="round" />
+                <path d="M 25.5 26 C 26 35 26.5 44 27 53" stroke="#ffe050" stroke-width="1.5" opacity="0.5" fill="none"
+                    stroke-linecap="round" />
+
+                <!-- ══ WEISSE HÖRNER ══ -->
+                <path d="M 11 19 C 8.5 14 7 8 8.5 4.5 C 10 8 11.5 13 13 17.5 Z" fill="url(#wHrn)" />
+                <path d="M 8.5 4.5 C 9.5 8 11 13 13 17.5" stroke="#c8c4b4" stroke-width="0.6" fill="none" />
+                <path d="M 29 19 C 31.5 14 33 8 31.5 4.5 C 30 8 28.5 13 27 17.5 Z" fill="url(#wHrn)" />
+                <path d="M 31.5 4.5 C 30 8 28.5 13 27 17.5" stroke="#c8c4b4" stroke-width="0.6" fill="none" />
+
+                <!-- ══ TÜRKISER HELM ══ -->
+                <ellipse cx="20" cy="15" rx="10.5" ry="7.5" fill="url(#wHlm)" />
+                <ellipse cx="20" cy="15" rx="10.5" ry="7.5" fill="url(#wShn)" />
+                <rect x="9" y="21" width="22" height="3.5" rx="1.75" fill="#0a8880" />
+                <rect x="9" y="21" width="22" height="1.1" rx="0.55" fill="white" opacity="0.28" />
+                <rect x="9" y="23.8" width="22" height="0.8" rx="0.4" fill="#046660" opacity="0.5" />
+
+                <!-- ══ GESICHT ══ -->
+                <circle cx="20" cy="33" r="9.5" fill="#fde8c8" />
+                <ellipse cx="20" cy="27" rx="10.5" ry="2.6" fill="#0d0d1c" opacity="0.10" />
+                <circle cx="13.5" cy="36" r="2.3" fill="#f38ba8" opacity="0.30" />
+                <circle cx="26.5" cy="36" r="2.3" fill="#f38ba8" opacity="0.30" />
+
+                <!-- ══ GROSSE RUNDE AUGEN ══ -->
+                <circle cx="16.5" cy="31.5" r="2.9" fill="white" />
+                <circle cx="23.5" cy="31.5" r="2.9" fill="white" />
+                <circle cx="16.8" cy="32" r="1.75" fill="#1a1030" />
+                <circle cx="23.8" cy="32" r="1.75" fill="#1a1030" />
+                <circle cx="17.5" cy="31.2" r="0.58" fill="white" />
+                <circle cx="24.5" cy="31.2" r="0.58" fill="white" />
+
+                <!-- ══ OFFENER MUND (Aha-Pose) ══ -->
+                <path d="M 16.5 37.5 Q 17 40.5 20 41 Q 23 40.5 23.5 37.5 Z" fill="#b02848" />
+                <path d="M 16.5 37.5 Q 20 39.5 23.5 37.5" fill="white" />
+                <path d="M 16.5 37.5 Q 20 42 23.5 37.5" stroke="#a02040" stroke-width="0.6" fill="none" />
+
+                <!-- ══ HEMD / KÖRPER ══ -->
+                <path d="M 6 53.5 Q 12 49 20 48 Q 28 49 34 53.5" fill="#d85870" />
+
+                <!-- ══ RECHTER ARM — Zeigefinger gerade nach oben ══ -->
+                <path d="M 30 52.5 C 29.5 48.5 29 44 28 40" stroke="#d85870" stroke-width="4.5" fill="none"
+                    stroke-linecap="round" />
+                <path d="M 28 40 C 27.5 37 27 34.5 26.5 32" stroke="#f0be90" stroke-width="3.8" fill="none"
+                    stroke-linecap="round" />
+                <ellipse cx="26.2" cy="31.5" rx="2.5" ry="2" fill="#fde8c8" />
+                <rect x="25.3" y="26.5" width="2.1" height="5.5" rx="1.05" fill="#fde8c8" />
+                <ellipse cx="26.35" cy="26.5" rx="1.05" ry="0.75" fill="#f0be90" />
+                <path d="M 25.4 28.5 L 27.3 28.5" stroke="#e0a870" stroke-width="0.5" opacity="0.55" />
+                <path d="M 25.4 30.2 L 27.3 30.2" stroke="#e0a870" stroke-width="0.5" opacity="0.4" />
+
+                <!-- Nase (zuletzt) -->
+                <ellipse cx="20" cy="35.5" rx="1.2" ry="1" fill="#d4a07a" />
+            </svg>
+        </div>
+        <div class="header-text">
+            <h1><span class="brand">Wickie</span> <span class="rest">Python Editor</span></h1>
+            <div class="subtitle">by J. Komaira</div>
+        </div>
+        <div id="status">
+            <span class="status-dot"></span>
+            <span id="status-text">Lade Python…</span>
+        </div>
+        <div id="authBtn">
+            <button onclick="openAuthModal('login')">🔑 Anmelden</button>
+        </div>
+        <div id="userMenu" style="display:none">
+            <span id="userEmail"></span>
+            <button id="joinClassBtn2" onclick="openModal('joinClassModal')" style="display:none">🏫 Klasse
+                beitreten</button>
+            <button id="dashboardBtn" onclick="openDashboard()" style="display:none">📊 Dashboard</button>
+            <button onclick="openProfileModal()">👤 Profil</button>
+            <button id="logoutBtn" onclick="doLogout()">Abmelden</button>
+        </div>
+        <button id="themeToggle" title="Hell/Dunkel wechseln">
+            <span class="toggle-icon">🌙</span>
+            <span class="toggle-label">Dunkel</span>
+        </button>
+    </header>
+
+    <!-- Wickie Sprechblase -->
+    <div id="wickieBubble">
+        <div class="wickie-bubble-head">
+            <span class="vb-title">💡 Wickie sagt:</span>
+            <button id="closeBubble" title="Schließen">✕</button>
+        </div>
+        <div id="wickieTipText"></div>
+    </div>
+
+    <div class="toolbar">
+        <button id="runBtn" disabled title="Strg+Enter">▶ Ausführen</button>
+        <div class="sep"></div>
+        <button id="saveBtn">💾 .py speichern</button>
+        <label class="file-label" title="Python-Datei laden">
+            📂 .py laden
+            <input type="file" id="fileInput" accept=".py,.txt">
+        </label>
+        <div class="sep"></div>
+        <button id="cloudSaveBtn" onclick="openSaveTitleModal()">☁️ Neu speichern</button>
+        <button id="updateProjectBtn" onclick="handleUpdateProject()">💾 Aktualisieren</button>
+        <span id="activeProjectLabel" style="display:none">📄 <span id="activeProjectName"></span></span>
+        <button id="myProjectsBtn" onclick="openProjectsModal()">📁 Meine Projekte</button>
+        <button id="qrBtn" onclick="openQrModal()" title="QR-Code für Aufgabe generieren">📲 QR-Aufgabe</button>
+        <div class="sep"></div>
+        <button id="fontBigBtn" class="font-btn" title="Schrift größer">A+</button>
+        <button id="fontSmallBtn" class="font-btn" title="Schrift kleiner">A−</button>
+        <span class="hint">Strg+Enter = Ausführen</span>
+    </div>
+
+    <div id="tabBar">
+        <!-- dynamisch gerendert -->
+        <button id="newTabBtn" onclick="createTab()" title="Neuer Tab">+</button>
+    </div>
+
+    <div id="descPanel">
+        <label for="descInput">✏️ Meine Beschreibung:</label>
+        <input type="text" id="descInput" placeholder="Beschreibe kurz was dein Code macht…" maxlength="200">
+    </div>
+
+    <div id="taskPanel">
+        <span class="task-label">📋 Aufgabe:</span>
+        <span class="task-body" id="taskText"></span>
+    </div>
+
+    <div class="main">
+        <div class="editor-pane">
+            <div class="pane-header">
+                <span>📝 Editor</span>
+            </div>
+            <textarea id="editorArea"></textarea>
+        </div>
+        <div class="output-pane">
+            <div class="pane-header">
+                <span id="outputPaneTitle">⬛ Ausgabe</span>
+                <button onclick="clearOutput()">leeren</button>
+            </div>
+            <canvas id="turtleCanvas" width="500" height="380"></canvas>
+            <div id="output"><span class="info">Python wird geladen, bitte warten…</span></div>
+        </div>
+    </div>
+
+
+    <!-- ══ AUTH MODAL ══ -->
+    <div class="sb-modal-overlay" id="authModal">
+        <div class="sb-modal">
+            <button class="sb-modal-close" onclick="closeModal('authModal')">✕</button>
+            <div class="sb-modal-logo">
+                <img id="authModalLogo" src="" alt="Wickie">
+            </div>
+            <h2 id="authModalTitle" style="text-align:center"><span>Anmelden</span></h2>
+            <p style="text-align:center;font-size:0.74rem;color:#45475a;margin:0px 0 6px">Wickie Python Editor</p>
+            <p style="text-align:center;font-size:0.74rem;color:#45475a;margin:0px 0 6px">Created by Jameel Komaira</p>
+
+            <!-- Nur bei Registrierung sichtbar -->
+            <div id="registerOnlyFields" style="display:none">
+                <label>Name</label>
+                <input type="text" id="authName" placeholder="Dein Name" autocomplete="name">
+
+                <label>Ich bin…</label>
+                <div class="auth-role-picker">
+                    <label class="auth-role-btn" id="roleSchülerLabel">
+                        <input type="radio" name="authRole" value="student" id="roleSchüler" checked>
+                        🎓 Schüler/in
+                    </label>
+                    <label class="auth-role-btn" id="roleLehrerLabel">
+                        <input type="radio" name="authRole" value="teacher" id="roleLehrer">
+                        💼 Lehrer/in
+                    </label>
+                </div>
+
+                <label id="schoolKeyLabel">Schulcode</label>
+                <input type="text" id="authSchoolKey" placeholder="Schulcode eingeben…" autocomplete="off">
+
+                <div id="teacherKeyField" style="display:none">
+                    <label>Lehrer-Bestätigungscode</label>
+                    <input type="text" id="authTeacherKey" placeholder="Nur für Lehrkräfte…" autocomplete="off">
+                </div>
+            </div>
+
+            <label>E-Mail</label>
+            <input type="email" id="authEmail" placeholder="deine@email.de" autocomplete="email">
+            <label>Passwort</label>
+            <input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen">
+            <div class="sb-error" id="authError"></div>
+            <div class="sb-success" id="authSuccess"></div>
+            <button class="sb-btn-primary" id="authSubmitBtn" onclick="handleAuthSubmit()">Anmelden</button>
+            <div class="sb-modal-switch" id="authSwitch">
+                Noch kein Konto? <a onclick="switchAuthMode('register')">Registrieren</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ DELETE ACCOUNT MODAL ══ -->
+    <div class="sb-modal-overlay" id="deleteAccountModal">
+        <div class="sb-modal" style="max-width:380px">
+            <button class="sb-modal-close" onclick="closeModal('deleteAccountModal')">✕</button>
+            <h2 style="color:#f38ba8">⚠️ Konto <span>löschen</span></h2>
+            <p style="font-size:0.83rem;color:#a6adc8;line-height:1.6;margin-bottom:8px">
+                Dein Konto und <b>alle gespeicherten Projekte</b> werden dauerhaft gelöscht.<br>
+                Diese Aktion kann nicht rückgängig gemacht werden!
+            </p>
+            <label style="margin-top:8px">Passwort zur Bestätigung</label>
+            <input type="password" id="deleteAccountPassword" placeholder="Dein Passwort eingeben">
+            <div class="sb-error" id="deleteAccountError"></div>
+            <button class="sb-btn-primary" id="deleteAccountBtn2"
+                style="background:linear-gradient(135deg,#f38ba8,#e05070)" onclick="handleDeleteAccount()">
+                🗑 Konto endgültig löschen
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ SAVE TITLE MODAL ══ -->
+    <div class="sb-modal-overlay" id="saveTitleModal">
+        <div class="sb-modal">
+            <button class="sb-modal-close" onclick="closeModal('saveTitleModal')">✕</button>
+            <h2>Projekt <span>speichern</span></h2>
+            <label>Projekttitel</label>
+            <input type="text" id="saveTitleInput" placeholder="z.B. Schleife Aufgabe 3" maxlength="80">
+            <div class="sb-error" id="saveError"></div>
+            <button class="sb-btn-primary" id="saveSubmitBtn" onclick="handleCloudSave()">☁️ Speichern</button>
+        </div>
+    </div>
+
+    <!-- ══ PROJEKTE MODAL ══ -->
+    <div class="sb-modal-overlay" id="projectsModal">
+        <div class="sb-modal">
+            <button class="sb-modal-close" onclick="closeModal('projectsModal')">✕</button>
+            <h2>Meine <span>Projekte</span></h2>
+            <div class="projects-list" id="projectsList">
+                <div class="projects-empty">Lade Projekte…</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sb-modal-overlay" id="qrModal">
+        <div class="sb-modal" style="max-width:420px">
+            <button class="sb-modal-close" onclick="closeModal('qrModal')">✕</button>
+            <h2>📲 QR-Code <span>Aufgabe</span></h2>
+            <p style="font-size:0.85rem;color:#6c7086;margin-bottom:12px">Aufgabe eingeben → QR-Code zeigen → SuS scannt
+                mit iPad</p>
+            <textarea id="qrTaskInput" rows="3" placeholder="z.B. Schreibe eine Schleife die 1 bis 10 ausgibt…"
+                maxlength="300"
+                style="width:100%;box-sizing:border-box;background:#11111b;border:1px solid #313244;color:#cdd6f4;border-radius:8px;padding:10px;font-size:0.9rem;resize:vertical;font-family:inherit"></textarea>
+            <button onclick="generateQr()"
+                style="margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#89b4fa,#cba6f7);border:none;border-radius:8px;font-weight:700;cursor:pointer;color:#1e1e2e">QR-Code
+                generieren</button>
+            <div id="qrCodeBox" style="display:none;margin-top:16px;text-align:center">
+                <div id="qrCanvas" style="display:inline-block;background:#fff;padding:12px;border-radius:8px"></div>
+                <p id="qrUrlText" style="font-size:0.75rem;color:#6c7086;margin-top:8px;word-break:break-all"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ LEHRER DASHBOARD ══ -->
+    <div class="dash-overlay" id="dashboardModal">
+        <div class="dash-panel">
+
+            <!-- Header -->
+            <div class="dash-header">
+                <div class="dash-header-left">
+                    <span class="dash-header-icon">📊</span>
+                    <div>
+                        <h2 class="dash-title">Lehrer-Dashboard</h2>
+                        <p class="dash-subtitle">Übersicht aller Schüler & Projekte</p>
+                    </div>
+                </div>
+                <button class="dash-close" onclick="closeModal('dashboardModal')">✕</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="dash-stats-row">
+                <div class="dash-stat-card">
+                    <div class="dash-stat-num" id="statStudents">—</div>
+                    <div class="dash-stat-label">Schüler</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dash-stat-num" id="statProjects">—</div>
+                    <div class="dash-stat-label">Projekte</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dash-stat-num" id="statToday">—</div>
+                    <div class="dash-stat-label">Heute aktiv</div>
+                </div>
+            </div>
+
+            <!-- Suche -->
+            <div class="dash-search-wrap">
+                <input type="text" id="dashSearch" class="dash-search" placeholder="🔍  Schüler suchen…"
+                    oninput="filterDashStudents()">
+                <button class="dash-refresh" onclick="loadDashboard()" title="Aktualisieren">↻</button>
+            </div>
+
+            <!-- Inhalt: Schüler-Grid oder Projekt-Detail -->
+            <div class="dash-body" id="dashBody">
+                <div class="dash-loading">Lade Daten…</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══ KI-ASSISTENT ══ -->
+    <button id="aiChatBtn" onclick="toggleChat()" title="KI-Assistent">
+        <img src="logo.png" alt="Wickie KI">
+    </button>
+
+    <div id="aiChatPanel">
+        <div class="ai-chat-header">
+            <img id="aiChatLogo" src="logo.png" alt="Wickie">
+            <div class="ai-chat-header-text">
+                <strong>Wickie KI-Assistent</strong>
+                <span>Nur für Python-Fragen</span>
+            </div>
+            <button id="aiChatClear" onclick="clearAiChat()" title="Chat leeren">🗑</button>
+            <button id="aiChatClose" onclick="toggleChat()">✕</button>
+        </div>
+        <div id="aiChatMessages">
+            <div class="ai-msg bot">
+                Hallo! 👋 Ich bin Wickie, dein Python-Assistent.<br>
+                Ich helfe dir bei <strong>Python-Fragen</strong> und deinen <strong>gespeicherten
+                    Projekten</strong>.<br>
+                Was möchtest du wissen?
+            </div>
+        </div>
+        <div class="ai-context-bar">
+            🧠 <span id="aiContextInfo">Kein Code im Editor</span>
+        </div>
+        <div class="ai-chat-footer">
+            <input type="text" id="aiChatInput" placeholder="Frage zu Python stellen…" maxlength="500"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}">
+            <button id="aiChatSend" onclick="sendAiMessage()" title="Senden">➤</button>
+        </div>
+    </div>
+    <!-- ══ PROFILE MODAL ══ -->
+    <div class="sb-modal-overlay" id="profileModal">
+        <div class="sb-modal" style="max-width:420px">
+            <button class="sb-modal-close" onclick="closeModal('profileModal')">✕</button>
+            <h2>👤 Profil <span>bearbeiten</span></h2>
+            <label>Vorname</label>
+            <input type="text" id="profileFirstName" placeholder="Vorname" autocomplete="given-name">
+            <label>Nachname</label>
+            <input type="text" id="profileLastName" placeholder="Nachname" autocomplete="family-name">
+            <label>E-Mail</label>
+            <input type="email" id="profileEmail" placeholder="deine@email.de" autocomplete="email">
+            <label>Neues Passwort <span style="font-weight:400;font-size:0.78rem;opacity:0.6">(leer lassen = kein Wechsel)</span></label>
+            <input type="password" id="profilePassword" placeholder="Mindestens 6 Zeichen">
+            <label>Passwort bestätigen</label>
+            <input type="password" id="profilePasswordConfirm" placeholder="Passwort wiederholen">
+            <div class="sb-error" id="profileError"></div>
+            <div class="sb-success" id="profileSuccess"></div>
+            <div style="display:flex;gap:10px;margin-top:4px">
+                <button class="sb-btn-primary" id="profileSaveBtn" style="flex:1" onclick="saveProfile()">Speichern</button>
+                <button onclick="closeModal('profileModal');openDeleteAccountModal()"
+                    style="flex:0 0 auto;padding:0 16px;border-radius:10px;border:1px solid #f38ba8;background:transparent;color:#f38ba8;font-size:0.82rem;font-weight:600;cursor:pointer">
+                    🗑 Konto löschen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ JOIN CLASS MODAL ══ -->
+    <div class="sb-modal-overlay" id="joinClassModal">
+        <div class="sb-modal" style="max-width:400px">
+            <div class="sb-modal-logo"><img src="logo.png" alt="Wickie" id="joinClassLogo"></div>
+            <h2 style="text-align:center">Klasse <span>beitreten</span></h2>
+            <p style="text-align:center;font-size:0.8rem;color:#6c7086;margin:0 0 20px">Gib den Klassencode ein, den
+                dein Lehrer dir gegeben hat.</p>
+            <label>Klassencode</label>
+            <input type="text" id="joinCodeInput" placeholder="z.B. XK92LM" maxlength="6"
+                style="text-transform:uppercase;letter-spacing:0.15em;font-size:1.1rem;font-weight:700;text-align:center"
+                oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')joinClass()">
+            <div class="sb-error" id="joinClassError"></div>
+            <button class="sb-btn-primary" id="joinClassBtn" onclick="joinClass()">Klasse beitreten</button>
+            <div class="sb-modal-switch"><a onclick="closeModal('joinClassModal')">Später eingeben</a></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
