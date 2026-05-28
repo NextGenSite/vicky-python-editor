@@ -707,7 +707,8 @@
             if (title) document.getElementById('topbarTitle').textContent = title;
             if (sub) document.getElementById('topbarSub').textContent = sub;
             const sel = document.getElementById('classSelector');
-            if (sel) sel.style.display = (name === 'classes' || _classes.length <= 1) ? 'none' : 'inline-block';
+            const noFilter = name === 'classes' || name === 'task-detail' || _classes.length <= 1;
+            if (sel) sel.style.display = noFilter ? 'none' : 'inline-block';
         }
 
         // ── Class Info Card (overview) ────────────────────────────────────────────
@@ -895,8 +896,10 @@
             const subsMap = {};
             for (const s of (subs || [])) subsMap[s.user_id] = s;
             const stuCount = students?.length || 0;
-            const submittedCount = (subs || []).filter(s => s.status === 'submitted').length;
-            const inProgressCount = (subs || []).filter(s => s.status === 'in_progress').length;
+            const currentStudentIds = new Set((students || []).map(s => s.id));
+            const activeSubs = (subs || []).filter(s => currentStudentIds.has(s.user_id));
+            const submittedCount = activeSubs.filter(s => s.status === 'submitted').length;
+            const inProgressCount = activeSubs.filter(s => s.status === 'in_progress').length;
 
             const statusBadge = s => {
                 const sub = subsMap[s.id];
